@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Commander</title>
+    <style>
+        :root { --bg: #0d1117; --text: #c9d1d9; --accent: #238636; --card: #161b22; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+        .container { width: 90%; max-width: 600px; background: var(--card); padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); text-align: center; }
+        h1 { margin-bottom: 20px; }
+        .status { margin-bottom: 20px; font-size: 0.9em; color: #8b949e; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        button { background: #21262d; border: 1px solid #30363d; color: var(--text); padding: 15px; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 1em; }
+        button:hover { background: #30363d; border-color: #8b949e; }
+        button.primary { background: var(--accent); border-color: rgba(240,246,252,0.1); color: white; }
+        button.primary:hover { background: #2ea043; }
+        .drop-zone { border: 2px dashed #30363d; padding: 40px; border-radius: 8px; margin-top: 20px; transition: 0.2s; }
+        .drop-zone.dragover { border-color: var(--accent); background: rgba(35,134,54,0.1); }
+        #toast { position: fixed; bottom: 20px; background: #238636; color: white; padding: 10px 20px; border-radius: 6px; display: none; animation: popUp 0.3s ease-out; }
+        @keyframes popUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Android Commander</h1>
+        <div class="status">Connected to Emulator • Ready</div>
+        
+        <div class="grid">
+            <button onclick="installEssentials()" class="primary">🛍️ Install Essential Apps</button>
+            <button onclick="setResolution('tablet')">📱 Tablet Mode</button>
+            <button onclick="setResolution('desktop')">🖥️ Desktop Mode</button>
+            <button onclick="setResolution('phone')">📱 Phone Mode</button>
+        </div>
+
+        <div class="drop-zone" id="dropZone">
+            <h3>📤 Upload APK to Install</h3>
+            <p>Drag & Drop APK files here instantly</p>
+        </div>
+    </div>
+    
+    <div id="toast">✅ Action Completed!</div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const showToast = (msg) => {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 3000);
+        };
+
+        const apiCall = async (url, data = {}) => {
+            try {
+                const res = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+                const json = await res.json();
+                showToast(json.success ? '✅ Success!' : '❌ Error: ' + json.output);
+            } catch (e) { showToast('❌ Network Error'); }
+        };
+
+        window.installEssentials = () => apiCall('/api/install-essentials');
+        window.setResolution = (mode) => apiCall('/api/set-resolution', { mode });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+
+        ['dragenter', 'dragover'].forEach(() => dropZone.classList.add('dragover'));
+        ['dragleave', 'drop'].forEach(() => dropZone.classList.remove('dragover'));
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        async function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                const formData = new FormData();
+                formData.append('file', files[0]);
+                showToast('⏳ Uploading & Installing...');
+                try {
+                    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                    const json = await res.json();
+                    showToast(json.success ? '✅ APK Installed!' : '❌ Error: ' + json.output);
+                } catch (e) { showToast('❌ Upload Failed'); }
+            }
+        }
+    </script>
+</body>
+</html>
