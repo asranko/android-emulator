@@ -1,0 +1,30 @@
+{
+      "name": "Android Emulator with noVNC",
+      "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+      "features": {
+                "ghcr.io/devcontainers/features/desktop-lite:1": {
+                              "password": "android123",
+                              "webPort": "6080",
+                              "vncPort": "5901"
+                },
+                "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+      },
+      "containerEnv": {
+                "DISPLAY": ":1"
+      },
+      "forwardPorts": [6080, 5901, 6000],
+      "portsAttributes": {
+                "6080": {
+                              "label": "noVNC - Android Emulator",
+                              "onAutoForward": "openBrowser"
+                }
+      },
+      "postCreateCommand": "echo 'Setup complete!'",
+      "customizations": {
+                "vscode": {
+                              "extensions": [
+                                                "eamodio.gitlens"
+                              ]
+                }
+      }
+}
